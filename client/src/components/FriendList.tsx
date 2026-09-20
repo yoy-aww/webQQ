@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Modal, Input, message } from 'antd';
+import { App as AntdApp, Modal, Input } from 'antd';
 import { Avatar } from './Avatar';
 import { api, apiError } from '../api/client';
 import { chatKey, useStore } from '../store';
@@ -35,6 +35,7 @@ function SessionItem({ item, unread, active, onClick }: {
 }
 
 export function FriendList({ onOpen }: Props) {
+  const { message: toast } = AntdApp.useApp();
   const friends = useStore((s) => s.friends);
   const unread = useStore((s) => s.unread);
   const active = useStore((s) => s.active);
@@ -64,7 +65,7 @@ export function FriendList({ onOpen }: Props) {
     try {
       setSearchResult(await api.friendSearch(keyword.trim()));
     } catch (e) {
-      message.error(apiError(e));
+      toast.error(apiError(e));
     }
   };
 
@@ -77,21 +78,21 @@ export function FriendList({ onOpen }: Props) {
   const accept = async (f: FriendEntry) => {
     try {
       await api.acceptFriend(f.friend.id);
-      message.success('已添加好友');
+      toast.success('已添加好友');
       setFriends(await (await api.friends()).friends);
       onOpen({ kind: 'dm', friendId: f.friend.id, friend: f.friend });
     } catch (e) {
-      message.error(apiError(e));
+      toast.error(apiError(e));
     }
   };
 
   const reject = async (f: FriendEntry) => {
     try {
       await api.rejectFriend(f.friend.id);
-      message.success('已拒绝');
+      toast.success('已拒绝');
       setFriends((await api.friends()).friends);
     } catch (e) {
-      message.error(apiError(e));
+      toast.error(apiError(e));
     }
   };
 
@@ -100,12 +101,12 @@ export function FriendList({ onOpen }: Props) {
     if (!u) return;
     try {
       await api.sendFriendRequest(u.qqNumber);
-      message.success('好友申请已发送');
+      toast.success('好友申请已发送');
       setFriends((await api.friends()).friends);
       setKeyword('');
       setSearchResult(null);
     } catch (e) {
-      message.error(apiError(e));
+      toast.error(apiError(e));
     }
   };
 

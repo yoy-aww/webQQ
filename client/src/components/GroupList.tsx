@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Modal, Input, message } from 'antd';
+import { App as AntdApp, Modal, Input } from 'antd';
 import { Avatar } from './Avatar';
 import { api, apiError } from '../api/client';
 import { chatKey, useStore } from '../store';
@@ -11,6 +11,7 @@ interface Props {
 }
 
 export function GroupList({ onOpen }: Props) {
+  const { message: toast } = AntdApp.useApp();
   const groups = useStore((s) => s.groups);
   const unread = useStore((s) => s.unread);
   const active = useStore((s) => s.active);
@@ -31,19 +32,19 @@ export function GroupList({ onOpen }: Props) {
   const createGroup = async () => {
     const name = newName.trim();
     if (name.length < 1 || name.length > 20) {
-      message.error('群名需在 1-20 字符之间');
+      toast.error('群名需在 1-20 字符之间');
       return;
     }
     setBusy(true);
     try {
       const res = await api.createGroup(name);
-      message.success('建群成功，群号 ' + res.group.groupNumber);
+      toast.success('建群成功，群号 ' + res.group.groupNumber);
       setCreateOpen(false);
       setNewName('');
       setGroups(await (await api.groups()).groups);
       onOpen({ kind: 'group', group: res.group });
     } catch (e) {
-      message.error(apiError(e));
+      toast.error(apiError(e));
     } finally {
       setBusy(false);
     }

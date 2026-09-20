@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import http from 'node:http';
 import { Server as SocketIOServer } from 'socket.io';
-import { config } from './config.js';
+import { config, isAllowedOrigin } from './config.js';
 import authRoutes from './routes/auth.js';
 import userRoutes from './routes/users.js';
 import friendRoutes from './routes/friends.js';
@@ -13,7 +13,17 @@ import { ensureUploadDir } from './services/upload.js';
 
 export function createApp() {
   const app = express();
-  app.use(cors());
+  app.use(
+    cors({
+      origin(origin, cb) {
+        // 同源请求（无 Origin 头，Vite proxy 场景）或白名单内的来源放行；
+        // 其他来源不放行，避免任意站点跨域读数据。
+        if (!origin || isAllowedOrigin(origin)) return cb(null, true);
+        return cb(new Error('CORS: origin not allowed'));
+      },
+      credentials: true,
+    })
+  );
   app.use(express.json({ limit: '5mb' }));
   app.use(express.urlencoded({ extended: true }));
 

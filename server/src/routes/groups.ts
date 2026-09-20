@@ -7,11 +7,23 @@ import { isOnline } from '../socket.js';
 const router = Router();
 router.use(requireAuth);
 
+// 生成 QQ 风格 6 位群号（100000-999999），避开已存在的
 function genGroupNumber(db: ReturnType<typeof getDb>): string {
-  const row = db
-    .prepare('SELECT MAX(CAST(group_number AS INTEGER)) AS max_no FROM groups')
-    .get() as { max_no: number | null };
-  return String((row.max_no || 0) + 1);
+  const existing = new Set(
+    (db.prepare('SELECT group_number FROM groups').all() as { group_number: string }[]).map(
+      (r) => r.group_number
+    )
+  );
+  for (let i = 0; i < 5000; i++) {
+    const no = String(Math.floor(Math.random() * 900000) + 100000);
+    if (!existing.has(no)) return no;
+  }
+  // 极端情况：随机 5000 次都撞车，从最小未用号往后找
+  for (let no = 100000; no < 1000000; no++) {
+    if (!existing.has(String(no))) return String(no);
+  }
+  // 理论上不会到这里（900000 个候选）
+  throw new Error('无法生成群号');
 }
 
 function groupOut(g: Record<string, unknown>, memberCount: number): Record<string, unknown> {
@@ -91,15 +103,21 @@ router.get('/:id/members', (req: AuthedRequest, res) => {
   });
 });
 
-// 按群号加群
+// 按群号加群（前端「按群号加群」传的是群号而非 id，所以优先按 group_number 查）
 router.post('/:id/join', (req: AuthedRequest, res) => {
-  const gid = parseInt(req.params.id, 10);
+  const raw = req.params.id.trim();
   const db = getDb();
-  const g = db.prepare('SELECT * FROM groups WHERE id = ?').get(gid) as Record<string, unknown> | undefined;
+
+  const g = db
+    .prepare('SELECT * FROM groups WHERE group_number = ? OR id = ?')
+    .get(raw, parseInt(raw, 10)) as Record<string, unknown> | undefined;
   if (!g) return res.status(404).json({ error: '群不存在' });
+
+  const gid = g.id as number;
+  const isOwner = g.owner_id === req.userId;
   db.prepare(
     'INSERT OR IGNORE INTO group_members (group_id, user_id, role, joined_at) VALUES (?, ?, ?, ?)'
-  ).run(gid, req.userId!, 'member', Date.now());
+  ).run(gid, req.userId!, isOwner ? 'owner' : 'member', Date.now());
   const cnt = db
     .prepare('SELECT COUNT(*) AS n FROM group_members WHERE group_id = ?')
     .get(gid) as { n: number };

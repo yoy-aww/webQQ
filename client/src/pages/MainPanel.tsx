@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Modal, Input, message } from 'antd';
+import { App as AntdApp, Modal, Input } from 'antd';
 import { Avatar } from '../components/Avatar';
 import { FriendList } from '../components/FriendList';
 import { GroupList } from '../components/GroupList';
@@ -12,6 +12,7 @@ import type { ChatTarget } from '../types';
 type Tab = 'friends' | 'groups';
 
 export function MainPanel() {
+  const { message: toast } = AntdApp.useApp();
   const me = useStore((s) => s.me)!;
   const token = useStore((s) => s.token)!;
   const friends = useStore((s) => s.friends);
@@ -43,7 +44,7 @@ export function MainPanel() {
         setFriends(f.friends);
         setGroups(g.groups);
       } catch (e) {
-        if (!cancelled) message.error(apiError(e));
+        if (!cancelled) toast.error(apiError(e));
       }
     })();
 
@@ -83,7 +84,7 @@ export function MainPanel() {
     // 收到好友申请 → toast 提示 + 刷新好友列表
     const onRequest = (e: Event) => {
       const detail = (e as CustomEvent).detail as { nickname: string } | undefined;
-      message.info(`${detail?.nickname || '有人'} 申请加你为好友`);
+      toast.info(`${detail?.nickname || '有人'} 申请加你为好友`);
       api.friends().then((r) => setFriends(r.friends)).catch(() => undefined);
     };
     window.addEventListener('webqq:friend-request', onRequest);
@@ -127,16 +128,16 @@ export function MainPanel() {
     try {
       const res = await api.joinGroup(Number(num));
       if (!res.group) {
-        message.error('未找到该群号');
+        toast.error('未找到该群号');
         return;
       }
-      message.success('已加入群聊');
+      toast.success('已加入群聊');
       setJoinOpen(false);
       setJoinNumber('');
       setGroups(await (await api.groups()).groups);
       open({ kind: 'group', group: res.group });
     } catch (e) {
-      message.error(apiError(e));
+      toast.error(apiError(e));
     }
   };
 
@@ -220,6 +221,7 @@ export function MainPanel() {
 
 // 编辑资料弹窗
 function EditProfileModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { message: toast } = AntdApp.useApp();
   const me = useStore((s) => s.me)!;
   const updateMe = useStore((s) => s.updateMe);
   const [nickname, setNickname] = useState(me.nickname);
@@ -236,7 +238,7 @@ function EditProfileModal({ open, onClose }: { open: boolean; onClose: () => voi
   }, [open, me]);
 
   const submit = async () => {
-    if (nickname.trim().length < 2) return message.error('昵称至少 2 个字符');
+    if (nickname.trim().length < 2) return toast.error('昵称至少 2 个字符');
     setBusy(true);
     try {
       let avatar = me.avatar;
@@ -246,10 +248,10 @@ function EditProfileModal({ open, onClose }: { open: boolean; onClose: () => voi
       }
       const res = await api.updateMe({ nickname: nickname.trim(), signature: signature.trim(), avatar });
       updateMe(res.user);
-      message.success('已更新');
+      toast.success('已更新');
       onClose();
     } catch (e) {
-      message.error(apiError(e));
+      toast.error(apiError(e));
     } finally {
       setBusy(false);
     }
@@ -290,8 +292,8 @@ function EditProfileModal({ open, onClose }: { open: boolean; onClose: () => voi
             onChange={(e) => {
               const f = e.target.files?.[0];
               if (!f) return;
-              if (!f.type.startsWith('image/')) return message.error('只能选择图片');
-              if (f.size > 2 * 1024 * 1024) return message.error('图片不能超过 2MB');
+              if (!f.type.startsWith('image/')) return toast.error('只能选择图片');
+              if (f.size > 2 * 1024 * 1024) return toast.error('图片不能超过 2MB');
               const r = new FileReader();
               r.onload = () => setImg(String(r.result));
               r.readAsDataURL(f);

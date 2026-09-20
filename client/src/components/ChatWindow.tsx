@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 import { useEffect, useRef, useState } from 'react';
-import { message, Modal } from 'antd';
+import { App as AntdApp, Modal } from 'antd';
 import { Avatar } from './Avatar';
 import { api, apiError } from '../api/client';
 import { chatKey, useStore } from '../store';
@@ -24,6 +24,7 @@ const roleStyle: Record<GroupMember['role'], CSSProperties> = {
 };
 
 export function ChatWindow({ target, onClose }: Props) {
+  const { message: toast } = AntdApp.useApp();
   const me = useStore((s) => s.me)!;
   const key = chatKey(target);
   // ⚠️ 不要写成 `s.messages[key] || []` —— 每次渲染都返回新数组引用，
@@ -56,7 +57,7 @@ export function ChatWindow({ target, onClose }: Props) {
         setMessages(key, res.messages, res.hasMore);
         clearUnread(key);
       } catch (e) {
-        if (!cancelled) message.error(apiError(e));
+        if (!cancelled) toast.error(apiError(e));
       }
     })();
     return () => {
@@ -103,7 +104,7 @@ export function ChatWindow({ target, onClose }: Props) {
         target.kind === 'dm'
           ? await sendViaSocket(target.friendId, content)
           : await sendGroupViaSocket(target.group.id, content);
-      if (!res.ok) message.error(res.error || '发送失败');
+      if (!res.ok) toast.error(res.error || '发送失败');
     } finally {
       setText('');
       setSending(false);
@@ -121,7 +122,7 @@ export function ChatWindow({ target, onClose }: Props) {
           : await api.groupHistory(target.group.id, oldest.id);
       prependMessages(key, res.messages, res.hasMore);
     } catch (e) {
-      message.error(apiError(e));
+      toast.error(apiError(e));
     } finally {
       setLoadingMore(false);
     }
@@ -130,11 +131,11 @@ export function ChatWindow({ target, onClose }: Props) {
   // 图片上传并作为消息发送
   const handleImage = async (file: File) => {
     if (!file.type.startsWith('image/')) {
-      message.error('只能发送图片');
+      toast.error('只能发送图片');
       return;
     }
     if (file.size > 2 * 1024 * 1024) {
-      message.error('图片不能超过 2MB');
+      toast.error('图片不能超过 2MB');
       return;
     }
     try {
@@ -146,14 +147,14 @@ export function ChatWindow({ target, onClose }: Props) {
             target.kind === 'dm'
               ? await sendViaSocket(target.friendId, up.url, 'image')
               : await sendGroupViaSocket(target.group.id, up.url, 'image');
-          if (!res.ok) message.error(res.error || '图片发送失败');
+          if (!res.ok) toast.error(res.error || '图片发送失败');
         } catch (e) {
-          message.error(apiError(e));
+          toast.error(apiError(e));
         }
       };
       reader.readAsDataURL(file);
     } catch {
-      message.error('图片读取失败');
+      toast.error('图片读取失败');
     }
   };
 
@@ -240,6 +241,7 @@ export function ChatWindow({ target, onClose }: Props) {
 
 // 群成员列表
 export function GroupMembersDrawer({ groupId }: { groupId: number }) {
+  const { message: toast } = AntdApp.useApp();
   const [open, setOpen] = useState(false);
   const [members, setMembers] = useState<GroupMember[]>([]);
   const me = useStore((s) => s.me)!;
@@ -248,7 +250,7 @@ export function GroupMembersDrawer({ groupId }: { groupId: number }) {
     if (!open) return;
     api.groupMembers(groupId)
       .then((r) => setMembers(r.members))
-      .catch((e) => message.error(apiError(e)));
+      .catch((e) => toast.error(apiError(e)));
   }, [open, groupId]);
 
   const roleBadge = (role: GroupMember['role']): string =>
