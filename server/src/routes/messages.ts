@@ -30,6 +30,20 @@ function parseBefore(v: unknown): number | undefined {
 router.get('/dm/:friendId', (req: AuthedRequest, res) => {
   const friendId = parseInt(req.params.friendId, 10);
   if (!Number.isFinite(friendId)) return res.status(400).json({ error: '参数错误' });
+  const db = getDb();
+  // 权限校验：只能拉自己和"已接受好友"之间的记录，
+  // 否则任何登录用户拿到别人 id（QQ 号是递增的，可猜测）就能读私聊。
+  const isFriend = db
+    .prepare(
+      `SELECT 1 FROM friendships
+        WHERE status = 'accepted'
+          AND (
+            (user_id = ? AND friend_id = ?)
+            OR (user_id = ? AND friend_id = ?)
+          )`
+    )
+    .get(req.userId!, friendId, friendId, req.userId!);
+  if (!isFriend) return res.status(403).json({ error: '不是好友' });
   const list = fetchDmHistory(req.userId!, friendId, parseBefore(req.query.before), LIMIT);
   res.json({ messages: list, hasMore: list.length === LIMIT });
 });

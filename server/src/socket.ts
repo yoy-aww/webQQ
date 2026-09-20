@@ -14,6 +14,25 @@ export function isOnline(userId: number): boolean {
   return onlineSockets.has(userId);
 }
 
+/**
+ * 通知某用户收到好友申请（由 REST 层调用）。
+ * 放在 socket 模块是因为它需要访问 io 实例；
+ * REST 路由不能直接 import socket.ts 的 setupSocket（会循环）。
+ */
+let ioRef: Server | null = null;
+
+export function bindIo(io: Server): void {
+  ioRef = io;
+}
+
+export function notifyFriendRequest(toUserId: number, from: { id: number; nickname: string }): void {
+  if (!ioRef) return;
+  ioRef.to(`user:${toUserId}`).emit('friend:request', {
+    fromId: from.id,
+    nickname: from.nickname,
+  });
+}
+
 function trackSocket(userId: number, socketId: string): void {
   let set = onlineSockets.get(userId);
   if (!set) {
@@ -51,6 +70,7 @@ export function getGroupIds(userId: number): number[] {
 }
 
 export function setupSocket(io: Server): void {
+  bindIo(io);
   io.use((socket: OnlineSocket, next) => {
     const token =
       (socket.handshake.auth?.token as string | undefined) ||

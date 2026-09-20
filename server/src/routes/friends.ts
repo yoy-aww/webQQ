@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { getDb } from '../db.js';
 import { requireAuth, type AuthedRequest } from '../middleware/auth.js';
-import { isOnline } from '../socket.js';
+import { isOnline, notifyFriendRequest } from '../socket.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -91,8 +91,8 @@ router.post('/request', (req: AuthedRequest, res) => {
   const db = getDb();
 
   const target = db
-    .prepare('SELECT id FROM users WHERE qq_number = ?')
-    .get(parsed.data.qqNumber) as { id: number } | undefined;
+    .prepare('SELECT id, nickname FROM users WHERE qq_number = ?')
+    .get(parsed.data.qqNumber) as { id: number; nickname: string } | undefined;
   if (!target) return res.status(404).json({ error: '用户不存在' });
   if (target.id === req.userId) return res.status(400).json({ error: '不能添加自己' });
 
@@ -109,6 +109,13 @@ router.post('/request', (req: AuthedRequest, res) => {
   db.prepare(
     'INSERT INTO friendships (user_id, friend_id, status, created_at) VALUES (?, ?, ?, ?)'
   ).run(lo, hi, 'pending', Date.now());
+
+  // 实时通知对方：收到好友申请（对方在线时）
+  const me = db
+    .prepare('SELECT nickname FROM users WHERE id = ?')
+    .get(req.userId!) as { nickname: string };
+  notifyFriendRequest(target.id, { id: req.userId!, nickname: me.nickname });
+
   res.status(201).json({ status: 'sent' });
 });
 
