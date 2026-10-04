@@ -593,7 +593,7 @@ font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', -apple-system, sans-s
 
 ```typescript
 export default defineConfig({
-  resolve: { alias: { '@': '/src' } },
+  resolve: { alias: { '@': path.resolve(__dirname, 'src') } },
   server: {
     port: 5173,
     proxy: {
