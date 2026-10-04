@@ -7,10 +7,11 @@ export default defineConfig({
   resolve: {
     alias: { '@': path.resolve(__dirname, 'src') },
   },
-  // vitest 配置: store 依赖 localStorage, 必须用 jsdom
+  // vitest 配置: store 依赖 localStorage, 必须用 jsdom + setup 注入 mock
   test: {
     environment: 'jsdom',
     globals: true,
+    setupFiles: './test-setup.ts',
   },
   server: {
     port: 5173,
