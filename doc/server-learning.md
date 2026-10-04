@@ -174,7 +174,7 @@ WebSocket 事件 → socket.ts(认证+转发) ───────────�
 
 ```
 POST /api/auth/register { nickname, password }
-  1. Zod 校验：nickname(2-20字符)、password(6-20字符)
+  1. Zod 校验：nickname(2-20字符)、password(6-50字符)
   2. 检查昵称唯一性
   3. 生成 QQ 号（找到当前最大 QQ 号 +1）
   4. bcrypt 哈希密码（10轮盐值）
