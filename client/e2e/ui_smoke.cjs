@@ -1,4 +1,6 @@
 const { chromium } = require('playwright-core');
+const path = require('node:path');
+const os = require('node:os');
 
 const ok = (name, cond, extra = '') =>
   console.log((cond ? '✅ ' : '❌ ') + name + (extra ? ' — ' + extra : ''));
@@ -46,8 +48,8 @@ const ok = (name, cond, extra = '') =>
   if (landed !== 'side-panel') {
     console.log('\n--- 所有日志 ---');
     logs.forEach((l) => console.log(l));
-    await page.screenshot({ path: 'C:/Users/aww/AppData/Local/Temp/webqq-fail.png' });
-    console.log('失败截图: C:/Users/aww/AppData/Local/Temp/webqq-fail.png');
+    await page.screenshot({ path: path.join(os.tmpdir(), 'webqq-fail.png') });
+    console.log('失败截图: ' + path.join(os.tmpdir(), 'webqq-fail.png'));
     await page.close();
     await browser.close();
     process.exit(1);
@@ -98,8 +100,8 @@ const ok = (name, cond, extra = '') =>
   const errs = logs.filter((l) => l.startsWith('[error]') || l.startsWith('PAGEERROR') || l.startsWith('REQFAIL'));
   ok('12. 无前端错误', errs.length === 0, errs.slice(0, 4).join(' ; '));
 
-  await page.screenshot({ path: 'C:/Users/aww/AppData/Local/Temp/webqq-group.png' });
-  console.log('截图: C:/Users/aww/AppData/Local/Temp/webqq-group.png');
+  await page.screenshot({ path: path.join(os.tmpdir(), 'webqq-group.png') });
+  console.log('截图: ' + path.join(os.tmpdir(), 'webqq-group.png'));
 
   await page.close();
   await browser.close();
