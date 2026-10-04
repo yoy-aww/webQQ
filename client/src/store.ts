@@ -31,9 +31,11 @@ interface AppState {
   setLoading: (v: boolean) => void;
 }
 
-/** key: dm:{friendId} / group:{groupId} — 只需要 id 就能构造 */
-export const chatKey = (target: { kind: string; friendId?: number; group?: { id: number } }): string =>
-  target.kind === 'dm' ? `dm:${target.friendId}` : `group:${target.group!.id}`;
+/** key: dm:{friendId} / group:{groupId} */
+export const chatKey = (
+  target: { kind: 'dm'; friendId: number } | { kind: 'group'; group: { id: number } }
+): string =>
+  target.kind === 'dm' ? `dm:${target.friendId}` : `group:${target.group.id}`;
 
 const storedUser = (): PublicUser | null => {
   const raw = localStorage.getItem('webqq_user');
