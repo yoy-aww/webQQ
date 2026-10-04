@@ -53,7 +53,7 @@ export function createApp() {
 
   const server = http.createServer(app);
   const io = new SocketIOServer(server, {
-    cors: { origin: '*', credentials: true },
+    cors: { origin: config.corsOrigins, credentials: true },
   });
   setupSocket(io);
 
