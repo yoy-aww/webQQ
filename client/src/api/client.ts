@@ -47,11 +47,8 @@ export const api = {
       http.post<{ token: string; user: PublicUser }>('/auth/register', { nickname, password })
     ),
 
-  me: () => unwrap(http.get<{ user: PublicUser }>('/users/me')),
   updateMe: (patch: { nickname?: string; signature?: string; avatar?: string }) =>
     unwrap(http.patch<{ user: PublicUser }>('/users/me', patch)),
-  searchUser: (qq: string) =>
-    unwrap(http.get<{ users: PublicUser[] }>('/users/search', { params: { qq } })),
 
   friends: () => unwrap(http.get<{ friends: FriendEntry[] }>('/friends')),
   friendSearch: (qq: string) =>
@@ -62,10 +59,6 @@ export const api = {
     unwrap(http.post<{ status: string }>('/friends/accept', { friendId })),
   rejectFriend: (friendId: number) =>
     unwrap(http.post<{ status: string }>('/friends/reject', { friendId })),
-  deleteFriend: (friendId: number) =>
-    unwrap(http.delete<{ ok: boolean }>('/friends/' + friendId)),
-  setRemark: (friendId: number, remark: string) =>
-    unwrap(http.patch<{ ok: boolean }>('/friends/remark', { friendId, remark })),
 
   dmHistory: (friendId: number, before?: number) =>
     unwrap(
